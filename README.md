@@ -18,5 +18,5 @@ or install zip
 cd Termiphish && python3 main.py
 ```
 ## Version
-#### V1.2
+#### V1.3
 #### For education purposes only!
