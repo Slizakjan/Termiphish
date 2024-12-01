@@ -9,7 +9,7 @@ apt update && apt upgrade && apt install python3 && git clone https://github.com
 ```
 #### Windows
 ```bash
-git clone https://github.com/Slizakjan/APUC-Lite.git
+git clone https://github.com/Slizakjan/Termiphish.git
 ```
 or install zip
 
