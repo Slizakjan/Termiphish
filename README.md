@@ -2,11 +2,11 @@
 Advanced instagram phisher with terminal interface.<br>
 ## BETA V1.4!!!
 # Features:
-Auto translate
-Auto credentials redeem
-2fa bypass
-Location authentication (to get gps info)
-English terminal interface
+Auto translate<br>
+Auto credentials redeem<br>
+2fa bypass<br>
+Location authentication (to get gps info)<br>
+English terminal interface<br>
 
 # NOTE
 please take in mind this is beta version, there might be bugs and mistakes in translation, if you find some report them!
