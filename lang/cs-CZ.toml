@@ -1,0 +1,66 @@
+[login]
+username_label = "Telefonní číslo, uživatelské jméno nebo e-mail"
+password_label = "Heslo"
+show_button = "Zobrazit"
+hide_button = "Skrýt"
+login_button = "Přihlaste se"
+or = "Nebo"
+login_with_facebook = "Přihlaste se pomocí Facebooku"
+forgot_password = "Zapomněli jste heslo?"
+content_report_first = "Můžete také"
+content_report_middle = "nahlásit obsah, o kterém se domníváte, že je nezákonný"
+content_report_last = "ve vaší zemi bez přihlášení."
+signup_message = "Nemáte účet?"
+signup_button = "Zaregistrujte se"
+get_the_app = "Získejte aplikaci."
+main_error_message = "Pro zobrazení obsahu musíte být přihlášeni ke svému instagramovému účtu."
+
+[login.errors]
+E1 = "Při přihlašování se objevila neznámá chyba, zkuste to později nebo zkuste jiný účet."
+E2 = "Je nám líto, vaše heslo bylo nesprávné. Zkontrolujte prosím své heslo."
+E3 = "Objevila se neznámá chyba, zkuste to později."
+
+[two_factor]
+confirm_button = "Potvrdit"
+code_label = "Bezpečnostní kód"
+content_report_first = "Můžete také"
+content_report_middle = "nahlásit obsah, který považujete za nezákonný"
+content_report_last = "ve vaší zemi bez přihlášení."
+trust_this_device = "Důvěřovat tomuto zařízení"
+no_ask = "Příště o kód nebudeme žádat"
+get_the_app = "Stáhněte si aplikaci."
+main_error = "Je vyžadován bezpečnostní kód."
+
+
+[two_factor.descriptions]
+verificationCodeDescription1 = "Zadejte kód, který jsme vám zaslali prostřednictvím SMS na vaše mobilní číslo:"
+verificationCodeDescription2 = "Zadejte jeden z 8místných kódů poskytnutých při nastavování dvoufaktorového ověřování."
+verificationCodeDescription3 = "Zadejte 6místný přihlašovací kód vygenerovaný ověřovací aplikací."
+verificationCodeDescription4 = "Zadejte 6místný přihlašovací kód přijatý přes WhatsApp."
+verificationCodeDescription = "Zadejte svůj ověřovací kód."
+
+[two_factor.change_decriptions]
+methodA1B3 = "Pokud nemůžete přijmout bezpečnostní kód prostřednictvím textové zprávy, můžete jej získat ze své"
+methodA1B2 = "Pokud nemůžete obdržet bezpečnostní kód prostřednictvím textové zprávy, můžete použít jeden ze"
+methodA2B3 = "Pokud se vám nedaří použít bezpečnostní kód ze záložních kódů, můžete jej získat z vaší"
+methodA2B1 = "Pokud nemůžete použít bezpečnostní kód ze záložních kódů, můžete jej získat prostřednictvím"
+methodA3B1 = "Pokud nemůžete použít přihlašovací kód z ověřovací aplikace, můžete jej získat pomocí"
+methodA3B2 = "Pokud se vám nedaří získat přihlašovací kód z ověřovací aplikace, použijte některý ze"
+methodA4 = "Pokud se vám nedaří přijmout kód přes WhatsApp, můžete"
+nomethod = "Vyberte alternativní možnost pro obdržení ověřovacího kódu."
+
+[two_factor.method_names]
+text_message = "textových zpráv"
+backup_codes = "záložních kódů"
+authentication_app = "ověřovací aplikace"
+or1 = "nebo prostřednictvím"
+or2 = "nebo použijte jeden z vašich"
+or3 = "nebo získejte z"
+
+[two_factor.errors]
+E1 = "Chyba při načítání konfigurace 2FA."
+E2 = "Při odesílání dat došlo k chybě, zkuste to prosím později."
+E3 = "Počkejte prosím několik minut, než to zkusíte znovu."
+E4 = "Je vyžadován bezpečnostní kód."
+E5 = "Došlo k neznámé chybě, zkuste to prosím znovu."
+E6 = "Zkontrolujte prosím bezpečnostní kód a zkuste to znovu."

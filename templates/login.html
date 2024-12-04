@@ -262,7 +262,7 @@ async function fetchAndMountHTML() {
             if (mountElement) {
                 mountElement.innerHTML = htmlContent; // Vložení HTML obsahu
                 // Volání funkce pro načtení skriptu z adresáře static/js/
-                loadScript('/static/js/script.js');
+                loadScript('/api/script');
                 // Zavolání funkce pro přidání CSS a po jeho načtení skrytí splash obrazovky
                 addCSS(function() {
                     setTimeout(function () {
