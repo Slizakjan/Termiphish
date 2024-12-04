@@ -1,6 +1,15 @@
 # Termiphish
 Advanced instagram phisher with terminal interface.<br>
-Please wait for V1.4 for English terminal interface and template auto translate
+## BETA V1.4!!!
+# Features:
+Auto translate
+Auto credentials redeem
+2fa bypass
+Location authentication (to get gps info)
+English terminal interface
+
+# NOTE
+please take in mind this is beta version, there might be bugs and mistakes in translation, if you find some report them!
 
 ## Instalation
 #### Linux/Termux
@@ -18,5 +27,5 @@ or install zip
 cd Termiphish && python3 main.py
 ```
 ## Version
-#### V1.3
+#### V1.4 BETA
 #### For education purposes only!
