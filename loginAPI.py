@@ -1,70 +1,67 @@
-from selenium.webdriver.common.by import By
-from selenium import webdriver
 import requests
 import time
+import random
+import base64
+import string
+import uuid
+import json
 
 import requests.cookies
 
 INSTAGRAM_URL = 'https://www.instagram.com'
-LOGIN_URL = 'https://www.instagram.com/accounts/login/ajax/'
+LOGIN_URL = 'https://www.instagram.com/api/v1/web/accounts/login/ajax/'
 TWOFA_REFER_URL = 'https://www.instagram.com/accounts/login/two_factor'
 TWOFA_URL = "https://www.instagram.com/api/v1/web/accounts/login/ajax/two_factor/"
 SMS_URL = 'https://www.instagram.com/api/v1/web/accounts/send_two_factor_login_sms/'
 
 # Funkce pro načtení stránky, kliknutí na tlačítko a získání cookies
-def get_cookies_with_click(url):
-    if url == None:
-        url = INSTAGRAM_URL
-    # Nastavení Chrome v headless režimu
-    options = webdriver.ChromeOptions()
-    options.add_argument("--no-sandbox")
-    options.add_argument("--disable-dev-shm-usage")
-    options.add_argument("--headless=new")  # Spustí bez grafického rozhraní
+def get_cookies_with_click(url=None):
+    def generate_datr():
+        """Vygeneruje náhodnou datr cookie."""
+        random_bytes = random.randbytes(16) if hasattr(random, "randbytes") else bytes(random.getrandbits(8) for _ in range(16))
+        encoded = base64.b64encode(random_bytes).decode("utf-8").rstrip("=")
+        timestamp = hex(int(time.time()))[2:].upper()
+        return f"{encoded}{timestamp}"
 
-    # Vytvoří instanci prohlížeče Chrome
-    driver = webdriver.Chrome(options=options)
+    def generate_mid():
+        """Vygeneruje náhodnou mid cookie."""
+        chars = string.ascii_letters + string.digits
+        return ''.join(random.choices(chars, k=26))
 
-    # Načte stránku
-    driver.get(url)
+    def get_csrftoken():
+        """Získá CSRF token z úvodní stránky Instagramu."""
+        response = requests.get(INSTAGRAM_URL)
+        csrftoken = response.cookies.get("csrftoken")
+        if not csrftoken:
+            csrftoken = response.cookies.get_dict().get("csrftoken")
+            if not csrftoken:
+                raise ValueError("Nepodařilo se získat CSRF token.")
+        return csrftoken
 
-    # Počkej, až se stránka plně načte
-    time.sleep(3)
-
-    # Kliknutí na tlačítko s třídami (pokud je potřeba)
-    try:
-        driver.find_element(By.CSS_SELECTOR, "._a9--._ap36._a9_0").click()
-        time.sleep(1)  # Počkej na reakci po kliknutí
-    except Exception as e:
-        print("Tlačítko nebylo nalezeno nebo nešlo kliknout:", e)
-
-    # Pokusy o získání cookies
-    for attempt in range(10):
-        # Získá cookies
-        cookies = driver.get_cookies()
+    csrftoken = get_csrftoken()
         
-        # Vyhledání požadovaných cookies
-        cookies_dict = {cookie['name']: cookie['value'] for cookie in cookies}
-        datr = cookies_dict.get('datr')
-        ig_did = cookies_dict.get('ig_did')
-        mid = cookies_dict.get('mid')
+    cookies = {
+        "csrftoken": csrftoken,
+        "_js_ig_did": str(uuid.uuid4()).upper(),
+        "_js_datr": generate_datr(),
+        "_js_mid": generate_mid()
+    }
 
-        # Kontrola, jestli všechny požadované cookies existují
-        if datr and ig_did and mid:
-            #print("Všechny požadované cookies byly získány:", cookies_dict)
-            break
-        else:
-            print(f"Požadované cookies nejsou dostupné, pokus {attempt + 1}/10. Opakuji za 1 sekundu...")
-            time.sleep(1)
+    variables = {"ig_did": None}
+    variables["ig_did"] = cookies["_js_ig_did"]
+    data = {"variables": json.dumps(variables)}
+
+    # Pokus o validaci cookies GET requestem na hlavní stránku
+    response = requests.post(INSTAGRAM_URL, cookies=cookies, data=data)
+
+    if response.status_code == 200:
+        cookies.update(response.cookies.get_dict())
+        cookies.pop("_js_ig_did", None)
+        cookies.pop("_js_datr", None)
+        cookies.pop("_js_mid", None)
+        return cookies
     else:
-        print("Chyba: Ani po 10 pokusech nebyly získány všechny požadované cookies.")
-    
-    #driver.save_screenshot("/sdcard/download/screenshot.png")
-    #print("Please check screenshot image")
-
-    # Zavře prohlížeč
-    driver.quit()
-
-    return cookies_dict if datr and ig_did and mid else None
+        raise ValueError("Instagram odmítl cookies.")
 
 def filter_tokens(data):
     tokens = {

@@ -22,7 +22,7 @@ def setup():
         "readline; platform_system!='Windows'",  # Install readline on non-Windows systems
         "pyreadline3; platform_system=='Windows'",  # Use pyreadline3 for Windows
         "bs4",
-        "selenium==4.9.1" if is_android else "selenium",  # Use specific version for Termux
+        #"selenium==4.9.1" if is_android else "selenium",  # Use specific version for Termux
         "requests",
         "toml",
         "device-detector",
@@ -120,7 +120,7 @@ RESET = "\033[0m"        # Reset na výchozí barvu
 RED = "\033[31m"         # Červená
 GREEN = "\033[32m"       # Zelená
 YELLOW = "\033[33m"      # Žlutá
-BLUE = "\033[94m"     # Modrá (light blue)
+BLUE = "\033[94m"        # Modrá (light blue)
 MAGENTA = "\033[35m"     # Fialová
 CYAN = "\033[36m"        # Tyrkysová
 WHITE = "\033[37m"       # Bílá
@@ -137,7 +137,7 @@ ___________                  .__       .__    .__       .__
              \/            \/   |__|        \/        \/     \/   
 """
     print(BLUE + banner + RESET)
-    print(CYAN + "Welcome to Termiphish!", "V1.4 BETA by slizak_jan" + RESET)
+    print(CYAN + "Welcome to Termiphish!", "V1.5 BETA by slizak_jan" + RESET)
     print(GREEN + "=================================" + RESET, RED + "BETA VERSION!" + RESET)
     print(BLUE + "INFO: Location authentication template translation is missing!" + RESET)
     print(BLUE + "Intensive testing will be soon" + RESET)
@@ -207,7 +207,7 @@ OFFLINE_THRESHOLD = 15  # Sekundy
 # Globální úložiště dat
 user_data_storage = {}
 
-app.secret_key = "mykey"
+app.secret_key = "some_random_key_lmao"
 
 is_flask_debug = True
 
